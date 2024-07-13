@@ -89,3 +89,13 @@ type StringLength<TString extends string, TR extends string[] = []> = TString ex
 type StringToNumber<TString extends string> = TString extends `${infer TPrefix}${infer TRest}` ? Plus<Multiply<S2N[TPrefix & keyof S2N], Pow<10, StringLength<TRest>>> & number, StringToNumber<TRest>> : 0;
 
 type Zzzz = StringToNumber<'12'>
+
+    // 一次减一半
+    // return (n % 2) ? myPow(x * x, Math.floor(n / 2)) * x : myPow(x * x, n / 2);
+
+type Exp2<TString extends string, TVars extends Record<string, any>> = TString extends `${infer _}${infer TB}${infer TC}${infer TD}` 
+? TC extends '+' ? Plus<StringToNumber<TVars[TB]>, StringToNumber<TVars[TD]>> : never : never
+
+type Exp<TString> = TString extends `${infer TA}${infer TB}${infer TC}${infer TD}` ? TB extends '=' ? Exp2<TD, {[TKey in TA]: TC}> : never : never
+
+type E1 = Exp<'a=2;a+a'>
