@@ -1,0 +1,25 @@
+{
+  "name": "tsmonkey",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/boenfu/tsmonkey#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boenfu/tsmonkey.git"
+  },
+  "bugs": {
+    "url": "https://github.com/boenfu/tsmonkey/issues"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@antfu/eslint-config": "^2.22.4",
+    "eslint": "^9.7.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.3"
+  }
+}
