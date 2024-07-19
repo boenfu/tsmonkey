@@ -76,9 +76,9 @@ type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
       Extract<TokenType, TCh> extends never
         // 未命中 token 跳过
         ? Lexer<TRest>
-        // 能匹配上的 token 先试试双字符的
-        : ReadTwoCharToken<TCode> extends [infer TTCh, infer TRest2 extends string] ?
-            [Token<Extract<TokenType, TTCh>, TTCh>, ...Lexer<TRest2>]
+        // 能匹配上的 token 先尝试匹配双字符
+        : ReadTwoCharToken<TCode> extends [infer TCh, infer TRest extends string] ?
+            [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
           : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
   // 文件结束
   : [Token<TokenType.EOF, ''>]
@@ -96,9 +96,13 @@ type ReadDigit<TCode extends string, TOutput extends string = ''> = TCode extend
 
 type ReadTwoCharToken<TCode extends string> = TCode extends `${infer TCh}${infer TCh2 extends string}${infer TRest}`
   ? Extract<TokenType, `${TCh}${TCh2}`> extends never
-    ? never
+    // 没有双字符返回单字符
+    ? [`${TCh}`, `${TCh2}${TRest}`]
     : [`${TCh}${TCh2}`, TRest] : never
 
 type _L1 = Lexer<`
-a !== b;
-`>
+let a = 8
+
+if (a != b) {
+  a = 10
+}`>
