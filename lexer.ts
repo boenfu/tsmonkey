@@ -14,8 +14,8 @@ declare enum TokenType {
   ASTERISK = '*',
   SLASH = '/',
 
-  //   EQ = '==',
-  //   NEQ = '!=',
+  EQ = '==',
+  NEQ = '!=',
 
   LT = '<',
   GT = '>',
@@ -59,8 +59,6 @@ interface Token<TType extends TokenType, TLiteral> {
   literal: TLiteral
 }
 
-type WhiteSpace = ' ' | '\n' | '\t' | '\r'
-
 type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
   // 是字母/下划线/美元符
   ? TCh extends Letter
@@ -74,21 +72,16 @@ type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
         // 遍历读取标识符，剩余的继续递归
         ? [Token<TokenType.INT, TIdentity>, ...Lexer<TRest>]
         : never
-      : [
-          ...(TCh extends WhiteSpace
-          // 空白/换行字符跳过
-            ? []
-            : Extract<TokenType, TCh> extends never
-              ? [TCh]
-            // 能直接匹配上的 token
-              : [Token<Extract<TokenType, TCh>, TCh>]),
-          ... TRest extends ''
-          // 结束标记
-            ? [Token<TokenType.EOF, ''>]
-          // 递归解析
-            : Lexer<TRest>,
-        ]
-  : []
+      :
+      Extract<TokenType, TCh> extends never
+        // 未命中 token 跳过
+        ? Lexer<TRest>
+        // 能匹配上的 token 先试试双字符的
+        : ReadTwoCharToken<TCode> extends [infer TTCh, infer TRest2 extends string] ?
+            [Token<Extract<TokenType, TTCh>, TTCh>, ...Lexer<TRest2>]
+          : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
+  // 文件结束
+  : [Token<TokenType.EOF, ''>]
 
 type ReadIdentifier<TCode extends string, TOutput extends string = ''> = TCode extends
 // 允许标识符中非开头出现数字
@@ -101,6 +94,11 @@ type ReadDigit<TCode extends string, TOutput extends string = ''> = TCode extend
   ? ReadDigit<TRest, `${TOutput}${TCh}`>
   : [TOutput, TCode]
 
+type ReadTwoCharToken<TCode extends string> = TCode extends `${infer TCh}${infer TCh2 extends string}${infer TRest}`
+  ? Extract<TokenType, `${TCh}${TCh2}`> extends never
+    ? never
+    : [`${TCh}${TCh2}`, TRest] : never
+
 type _L1 = Lexer<`
-let 5g = g5(); 
+a !== b;
 `>

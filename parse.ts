@@ -79,7 +79,7 @@ interface S2N {
 
 type StringLength<TString extends string, TR extends string[] = []> = TString extends `${infer TPrefix}${infer TRest}` ? StringLength<TRest, [...TR, TPrefix]> : TR['length']
 
-type StringToNumber<TString extends string> = TString extends `${infer TPrefix}${infer TRest}` ? Plus<Multiply<S2N[TPrefix & keyof S2N], Pow<10, StringLength<TRest>>> & number, StringToNumber<TRest>> : 0
+export type StringToNumber<TString extends string> = TString extends `${infer TPrefix}${infer TRest}` ? Plus<Multiply<S2N[TPrefix & keyof S2N], Pow<10, StringLength<TRest>>> & number, StringToNumber<TRest>> : 0
 
 type Zzzz = StringToNumber<'12'>
 
@@ -92,3 +92,5 @@ type Exp2<TString extends string, TVars extends Record<string, any>> = TString e
 type Exp<TString> = TString extends `${infer TA}${infer TB}${infer TC}${infer TD}` ? TB extends '=' ? Exp2<TD, { [TKey in TA]: TC }> : never : never
 
 type E1 = Exp<'a=2;a+a'>
+
+type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
