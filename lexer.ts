@@ -1,4 +1,4 @@
-declare enum TokenType {
+export declare enum TokenType {
   ILLEGAL = 'ILLEGAL',
   EOF = 'EOF',
 
@@ -51,15 +51,32 @@ declare enum TokenType {
   //   NULL = 'null',
 }
 
-type Letter = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_' | '$'
-type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-
-interface Token<TType extends TokenType, TLiteral> {
+export interface Token<TType extends TokenType, TLiteral> {
   type: TType
   literal: TLiteral
 }
 
-type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
+type Letter = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_' | '$'
+type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+
+type ReadIdentifier<TCode extends string, TOutput extends string = ''> = TCode extends
+// 允许标识符中非开头出现数字
+`${infer TCh extends (TOutput extends '' ? Letter : Letter | Digit)}${infer TRest}`
+  ? ReadIdentifier<TRest, `${TOutput}${TCh}`>
+  : [TOutput, TCode]
+
+type ReadDigit<TCode extends string, TOutput extends string = ''> = TCode extends
+  `${infer TCh extends Digit}${infer TRest}`
+  ? ReadDigit<TRest, `${TOutput}${TCh}`>
+  : [TOutput, TCode]
+
+type ReadTwoCharToken<TCode extends string> = TCode extends `${infer TCh}${infer TCh2 extends string}${infer TRest}`
+  ? Extract<TokenType, `${TCh}${TCh2}`> extends never
+    // 没有双字符返回单字符
+    ? [`${TCh}`, `${TCh2}${TRest}`]
+    : [`${TCh}${TCh2}`, TRest] : never
+
+export type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
   // 是字母/下划线/美元符
   ? TCh extends Letter
     ? ReadIdentifier<TCode> extends [infer TIdentity, infer TRest extends string]
@@ -82,23 +99,6 @@ type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
           : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
   // 文件结束
   : [Token<TokenType.EOF, ''>]
-
-type ReadIdentifier<TCode extends string, TOutput extends string = ''> = TCode extends
-// 允许标识符中非开头出现数字
-`${infer TCh extends (TOutput extends '' ? Letter : Letter | Digit)}${infer TRest}`
-  ? ReadIdentifier<TRest, `${TOutput}${TCh}`>
-  : [TOutput, TCode]
-
-type ReadDigit<TCode extends string, TOutput extends string = ''> = TCode extends
-  `${infer TCh extends Digit}${infer TRest}`
-  ? ReadDigit<TRest, `${TOutput}${TCh}`>
-  : [TOutput, TCode]
-
-type ReadTwoCharToken<TCode extends string> = TCode extends `${infer TCh}${infer TCh2 extends string}${infer TRest}`
-  ? Extract<TokenType, `${TCh}${TCh2}`> extends never
-    // 没有双字符返回单字符
-    ? [`${TCh}`, `${TCh2}${TRest}`]
-    : [`${TCh}${TCh2}`, TRest] : never
 
 type _L1 = Lexer<`
 let a = 8
