@@ -23,20 +23,20 @@ interface Identifier<TValue> extends Expression {
   value: TValue
 }
 
-type Parser<TTokens extends Token<TokenType, any>[]> = Program<TTokens extends [infer TCur extends Token<any, any>, ...infer TRest extends Token<TokenType, any>[]]
-  ? ParseStatement<TCur, TRest>
-  : []>
+type Parser<TTokens extends Token<TokenType, any>[]> = TTokens extends [infer TCur extends Token<any, any>, ...infer TRest extends Token<TokenType, any>[]]
+  ? ParseStatement<TCur, TRest> extends [infer TStatement, infer TRestTokens] ? [TStatement, TRestTokens] : never
+  : []
 
 type ParseStatement<TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
   [TokenType.LET]: TTokens extends [infer TNextToken extends Token<TokenType, any>, ... infer TRest extends Token<TokenType, any>[]]
     ? ParseLetStatement<TNextToken, TRest> : never
   [TokenType.RETURN]: never
-} extends { [T in TToken['type']]: [infer TStatement] } ? [TStatement] : []
+} extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : []
 
 type ParseLetStatement<TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
-  [TokenType.IDENT]: TTokens extends [infer _TNextToken extends Token<TokenType.ASSIGN, any>, ...infer _TRest extends Token<TokenType, any>[]]
-    ? [LetStatement<Identifier<TToken['literal']>, Expression>] : never
-} extends { [T in TToken['type']]: [infer TStatement] } ? [TStatement] : []
+  [TokenType.IDENT]: TTokens extends [infer _TNextToken extends Token<TokenType.ASSIGN, any>, ...infer TRest extends Token<TokenType, any>[]]
+    ? [LetStatement<Identifier<TToken['literal']>, Expression>, TRest] : never
+} extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : []
 
 type _L1 = Lexer<'let a = 1;'>
 type _P1 = Parser<Lexer<'let a = 1;'>>
