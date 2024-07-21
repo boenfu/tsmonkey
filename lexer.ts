@@ -74,7 +74,9 @@ type ReadTwoCharToken<TCode extends string> = TCode extends `${infer TCh}${infer
   ? Extract<TokenType, `${TCh}${TCh2}`> extends never
     // 没有双字符返回单字符
     ? [`${TCh}`, `${TCh2}${TRest}`]
-    : [`${TCh}${TCh2}`, TRest] : never
+    : [`${TCh}${TCh2}`, TRest]
+  // 只有一个字符
+  : [TCode, '']
 
 export type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRest}`
   // 是字母/下划线/美元符
