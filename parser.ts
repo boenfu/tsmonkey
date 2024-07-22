@@ -1,4 +1,5 @@
 import type { Lexer, Token, TokenType } from './lexer'
+import type { StringToNumber } from './utils'
 
 interface Node {
   token: TokenType
@@ -30,6 +31,11 @@ interface ExpressionStatement<TToken extends TokenType, TValue extends Expressio
 
 interface Identifier<TValue> extends Expression {
   token: TokenType.IDENT
+  value: TValue
+}
+
+interface IntegerLiteral<TValue extends number> extends Expression {
+  token: TokenType.INT
   value: TValue
 }
 
@@ -76,9 +82,11 @@ ParsePrefixParseFn<TToken, TTokens>
 
 type ParsePrefixParseFn<TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
   [TokenType.IDENT]: Identifier<TToken['literal']>
+  [TokenType.INT]: IntegerLiteral<StringToNumber<TToken['literal']>>
 } extends { [T in TToken['type']]: infer TExpression extends Expression } ? [TExpression, TTokens] : []
 
 type Parser<TTokens extends Token<TokenType, any>[]> = Program<_Parser<TTokens>>
 
 type _L1 = Lexer<'1;'>
 type _P1 = Parser<Lexer<'let a = 1; return a;a'>>
+type _P2 = Parser<Lexer<'18;99'>>
