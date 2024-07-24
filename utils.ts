@@ -32,3 +32,5 @@ export type StringToNumber<TString extends string> = TString extends `${infer TP
 // @ts-expect-error
   ? Plus<Multiply<StringNumberMapping[TPrefix], Pow<10, StringLength<TRest>>>, StringToNumber<TRest>>
   : 0
+
+export type Equal<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : false
