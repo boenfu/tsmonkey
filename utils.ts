@@ -11,8 +11,6 @@ export type Divide<TA extends number, TB extends number> = TB extends 0 ? never 
 // @ts-expect-error
 export type Pow<TA extends number, TB extends number> = TB extends 0 ? 1 : _Array<TA> extends infer TR ? Multiply<TR['length'], Pow<TA, Minus<TB, 1>>> : never
 
-type _Pow = Pow<8, 2>
-
 interface StringNumberMapping {
   0: 0
   1: 1
@@ -37,6 +35,6 @@ export type Equal<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : fal
 
 type Falsy = false | '' | 0 | null | undefined
 
-export type IsFalsy<T> = Equal<T, Falsy>
+export type IsFalsy<T> = T extends Falsy ? true : false
 
-export type IsTruthy<T> = Equal<IsFalsy<T>, true>
+export type IsTruthy<T> = T extends Falsy ? false : true
