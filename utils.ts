@@ -34,3 +34,9 @@ export type StringToNumber<TString extends string> = TString extends `${infer TP
   : 0
 
 export type Equal<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : false
+
+type Falsy = false | '' | 0 | null | undefined
+
+export type IsFalsy<T> = Equal<T, Falsy>
+
+export type IsTruthy<T> = Equal<IsFalsy<T>, true>
