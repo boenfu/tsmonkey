@@ -39,6 +39,11 @@ interface IntegerLiteral<TValue extends number> extends Expression {
   value: TValue
 }
 
+interface PrefixExpression<TToken extends TokenType, TRight extends Expression> extends Expression {
+  token: TToken
+  value: TRight
+}
+
 type _Parser<TTokens extends Token<TokenType, any>[], TStatements extends Statement[] = []> = TTokens extends [infer TCur extends Token<any, any>, ...infer TRest extends Token<TokenType, any>[]]
   ? ParseStatement<TCur, TRest> extends [infer TStatement extends Statement, infer TRestTokens extends Token<any, any>[]] ? _Parser<TRestTokens, [...TStatements, TStatement]> : _Parser<TRest, TStatements>
   : TStatements
@@ -80,13 +85,24 @@ ParseExpression<Priority.LOWEST, TToken, TTokens> extends [infer TExpression ext
 type ParseExpression<_TPriority extends Priority, TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> =
 ParsePrefixParseFn<TToken, TTokens>
 
+type ParseExpression2<TPriority extends Priority, TTokens extends Token<TokenType, any>[]> = TTokens extends
+[infer TToken extends Token<TokenType, any>, ... infer TRest extends Token<TokenType, any>[]]
+  ? ParseExpression<TPriority, TToken, TRest>
+  : never
+
 type ParsePrefixParseFn<TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
-  [TokenType.IDENT]: Identifier<TToken['literal']>
-  [TokenType.INT]: IntegerLiteral<StringToNumber<TToken['literal']>>
-} extends { [T in TToken['type']]: infer TExpression extends Expression } ? [TExpression, TTokens] : []
+  [TokenType.IDENT]: [Identifier<TToken['literal']>, TTokens]
+  [TokenType.INT]: [IntegerLiteral<StringToNumber<TToken['literal']>>, TTokens]
+  [TokenType.BAND]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
+    ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
+  [TokenType.MINUS]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
+    ? [PrefixExpression<TokenType.MINUS, TExpression>, TRest] : never
+} extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
 type Parser<TTokens extends Token<TokenType, any>[]> = Program<_Parser<TTokens>>
 
 type _L1 = Lexer<'1;'>
 type _P1 = Parser<Lexer<'let a = 1; return a;a'>>
 type _P2 = Parser<Lexer<'18;99'>>
+type _P3 = Parser<Lexer<'-18'>>
+type _P4 = Parser<Lexer<'!18'>>
