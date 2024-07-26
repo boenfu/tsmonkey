@@ -39,6 +39,11 @@ interface IntegerLiteral<TValue extends number> extends Expression {
   value: TValue
 }
 
+interface BooleanLiteral<TValue extends boolean> extends Expression {
+  token: TValue extends true ? TokenType.TRUE : TokenType.FALSE
+  value: TValue
+}
+
 interface PrefixExpression<TToken extends TokenType, TRight extends Expression> extends Expression {
   token: TToken
   right: TRight
@@ -121,6 +126,8 @@ type ParseExpression2<TPriority extends Priority, TTokens extends Token<TokenTyp
 type ParsePrefixParseFn<TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
   [TokenType.IDENT]: [Identifier<TToken['literal']>, TTokens]
   [TokenType.INT]: [IntegerLiteral<StringToNumber<TToken['literal']>>, TTokens]
+  [TokenType.TRUE]: [BooleanLiteral<true>, TTokens]
+  [TokenType.FALSE]: [BooleanLiteral<false>, TTokens]
   [TokenType.BAND]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
     ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
   [TokenType.MINUS]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
@@ -164,6 +171,8 @@ type _P4 = Parser<Lexer<'!18'>>
 
 type _P5 = Parser<Lexer<'a + b + c'>>
 type _P5N = PN<Parser<Lexer<'a / b * c'>>, 0>
+
+type _P6 = Parser<Lexer<'tre false true'>>
 
 type PN<TP extends Program<any>, N extends number> = TP extends Program<infer TStatements> ? TStatements[N] : never
 
