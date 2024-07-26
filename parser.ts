@@ -132,6 +132,8 @@ type ParsePrefixParseFn<TToken extends Token<TokenType, any>, TTokens extends To
     ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
   [TokenType.MINUS]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
     ? [PrefixExpression<TokenType.MINUS, TExpression>, TRest] : never
+  [TokenType.LPAREN]: ParseExpression2<Priority.LOWEST, TTokens> extends [infer TExpression extends Expression, [infer _TRPAREN extends Token<TokenType.RPAREN, any>, ...infer TRest]]
+    ? [TExpression, TRest] : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
 type ParseInfixParseFn< TLeft extends Expression, TToken extends Token<TokenType, any>, TTokens extends Token<TokenType, any>[]> = {
@@ -173,6 +175,8 @@ type _P5 = Parser<Lexer<'a + b + c'>>
 type _P5N = PN<Parser<Lexer<'a / b * c'>>, 0>
 
 type _P6 = Parser<Lexer<'tre false true'>>
+
+type _P7 = PN<Parser<Lexer<'(a + 1) * 2'>>, 0>
 
 type PN<TP extends Program<any>, N extends number> = TP extends Program<infer TStatements> ? TStatements[N] : never
 
