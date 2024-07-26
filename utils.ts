@@ -31,10 +31,30 @@ export type StringToNumber<TString extends string> = TString extends `${infer TP
   ? Plus<Multiply<StringNumberMapping[TPrefix], Pow<10, StringLength<TRest>>>, StringToNumber<TRest>>
   : 0
 
-export type Equal<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : false
-
 type Falsy = false | '' | 0 | null | undefined
 
 export type IsFalsy<T> = T extends Falsy ? true : false
 
 export type IsTruthy<T> = T extends Falsy ? false : true
+
+type Compare<TA extends number, TB extends number> = _Array<TA> extends [..._Array<TB>, ...infer TRest]
+  ? TRest['length'] extends 0
+    ? '='
+    : '>'
+  : '<'
+
+export type AND<TA, TB> = TA extends true ? TB extends true ? true : false : false
+
+export type OR<TA, TB> = TA extends true ? true : TB extends true ? true : false
+
+export type EQ<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : false
+
+export type NEQ<TA, TB> = EQ<EQ<TA, TB>, false>
+
+export type GT<TA extends number, TB extends number> = EQ<Compare<TA, TB>, '>'>
+
+export type LT<TA extends number, TB extends number> = EQ<Compare<TA, TB>, '<'>
+
+export type GTE<TA extends number, TB extends number> = OR<GT<TA, TB>, EQ<TA, TB>>
+
+export type LTE<TA extends number, TB extends number> = OR<LT<TA, TB>, EQ<TA, TB>>
