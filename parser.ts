@@ -86,20 +86,23 @@ type _Parser<TTokens extends Token[], TStatements extends Statement[] = []> = TT
 type ParseStatement<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.LET]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]]
     ? ParseLetStatement<TNextToken, TRest> : never
-  [TokenType.RETURN]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]]
-    ? ParseReturnStatement<TNextToken, TRest> : never
+  [TokenType.RETURN]: ParseReturnStatement<TTokens>
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] }
   ? [TStatement, TRest]
   : ParseExpressionStatement<TToken, TTokens>
 
 type ParseLetStatement<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.IDENT]: TTokens extends [Token<TokenType.ASSIGN>, ...infer TRest extends Token[]]
-    ? [LetStatement<Identifier<TToken['literal']>, Expression>, TRest] : never
+    ? ParseExpression2<Priority.LOWEST, TRest> extends [infer TExpression extends Expression, infer TRest2 extends Token[]]
+      ? [LetStatement<Identifier<TToken['literal']>, TExpression>, TRest2]
+      : never
+    : never
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : []
 
-type ParseReturnStatement<TToken extends Token, TTokens extends Token[]> = {
-  [TokenType.IDENT]: []
-} extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : [ReturnStatement<Expression>, TTokens]
+type ParseReturnStatement<TTokens extends Token[]> =
+ParseExpression2<Priority.LOWEST, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
+  ? [ReturnStatement<TExpression>, TRest]
+  : [ReturnStatement<Expression>, TTokens]
 
 type ParseBlockStatement<TToken extends Token, TTokens extends Token[], TStatements extends Statement[]> = {
   [TokenType.RBRACE]: true
@@ -362,6 +365,9 @@ function(a, b) {
 `>>, 1>
 
 type _P10 = PN<Parser<Lexer<`function(b, c){}(b, c);`>>, 0>
+
+type _P11 = PN<Parser<Lexer<`let a = 1`>>, 0>
+type _P12 = PN<Parser<Lexer<`return 8 + 9`>>, 0>
 
 type PN<TP extends Program<any>, N extends number> = TP extends Program<infer TStatements> ? TStatements[N] : never
 
