@@ -15,8 +15,10 @@ import type {
 } from './parser'
 import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
 
+type ReturnValue<T = any> = { value: T } & '_returnValue'
+
 export type Eval<TNode extends Node> = {
-  Program: TNode extends Program<infer TStatements> ? EvalStatements<TStatements> : never
+  Program: TNode extends Program<infer TStatements> ? EvalProgramStatements<TStatements> : never
   LetStatement: 1
   ReturnStatement: TNode extends ReturnStatement<infer TReturnValue> ? Eval<TReturnValue> : never
   ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression> : never
@@ -35,13 +37,24 @@ export type Eval<TNode extends Node> = {
   CallExpression: 10
 } extends { [T in TNode['type']]: infer TR } ? TR : never
 
+type EvalProgramStatements<TStatements extends Statement[]> = TStatements extends [
+  infer TStatement extends Statement,
+  ...infer TRest extends Statement[],
+]
+  ? Eval<TStatement> extends infer TResult
+    ? OR<OR<EQ<TRest['length'], 0>, TResult extends ReturnValue ? true : false>, TResult extends ReturnValue ? true : false> extends true
+      ? TResult extends ReturnValue<infer TReturnValue> ? TReturnValue : TResult
+      : EvalProgramStatements<TRest>
+    : never
+  : undefined
+
 type EvalStatements<TStatements extends Statement[]> = TStatements extends [
   infer TStatement extends Statement,
   ...infer TRest extends Statement[],
 ]
   ? Eval<TStatement> extends infer TResult
-    ? OR<EQ<TRest['length'], 0>, TStatement extends ReturnStatement<any> ? true : false> extends true
-      ? TResult
+    ? OR<OR<EQ<TRest['length'], 0>, TResult extends ReturnValue ? true : false>, TResult extends ReturnValue ? true : false> extends true
+      ? TResult extends ReturnValue ? TResult : ReturnValue<TResult>
       : EvalStatements<TRest>
     : never
   : undefined
@@ -76,4 +89,14 @@ type _E6 = Eval<Parser<Lexer<`
 3 * 3
 return 4 * 4
 5 * 5
+`>>>
+
+type _E7 = Eval<Parser<Lexer<`
+if (4 > 2) {
+  if (4 > 3) {
+    return 1
+  }
+  
+  return 2
+}
 `>>>
