@@ -10,14 +10,15 @@ import type {
   Parser,
   PrefixExpression,
   Program,
+  ReturnStatement,
   Statement,
 } from './parser'
-import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, Plus } from './utils'
+import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
 
 export type Eval<TNode extends Node> = {
   Program: TNode extends Program<infer TStatements> ? EvalStatements<TStatements> : never
   LetStatement: 1
-  ReturnStatement: 2
+  ReturnStatement: TNode extends ReturnStatement<infer TReturnValue> ? Eval<TReturnValue> : never
   ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression> : never
   BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements> : never
   Identifier: 4
@@ -39,7 +40,7 @@ type EvalStatements<TStatements extends Statement[]> = TStatements extends [
   ...infer TRest extends Statement[],
 ]
   ? Eval<TStatement> extends infer TResult
-    ? TRest['length'] extends 0
+    ? OR<EQ<TRest['length'], 0>, TStatement extends ReturnStatement<any> ? true : false> extends true
       ? TResult
       : EvalStatements<TRest>
     : never
@@ -71,3 +72,8 @@ type _E5 = Eval<Parser<Lexer<`if (4 > 4) {
 } else {
   9 + 9
 }`>>>
+type _E6 = Eval<Parser<Lexer<`
+3 * 3
+return 4 * 4
+5 * 5
+`>>>
