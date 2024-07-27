@@ -1,7 +1,9 @@
 import type { Lexer, TokenType } from './lexer'
 import type {
+  BlockStatement,
   BooleanLiteral,
   ExpressionStatement,
+  IfExpression,
   InfixExpression,
   IntegerLiteral,
   Node,
@@ -17,13 +19,17 @@ export type Eval<TNode extends Node> = {
   LetStatement: 1
   ReturnStatement: 2
   ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression> : never
-  BlockStatement: 3
+  BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements> : never
   Identifier: 4
   IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? TValue : never
   BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? TValue : never
   PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight>> : never
   InfixExpression: TNode extends InfixExpression<infer TInfixTokenType, infer TLeft, infer TRight> ? EvalInfixExpression<TInfixTokenType, Eval<TLeft>, Eval<TRight>> : never
-  IfExpression: 8
+  IfExpression: TNode extends IfExpression<infer TCondition, infer TConsequence extends Node, infer TAlternative extends BlockStatement | undefined>
+    ? IsTruthy<Eval<TCondition>> extends true
+      ? Eval<TConsequence>
+      : TAlternative extends Node ? Eval<TAlternative> : undefined
+    : never
   FunctionLiteral: 9
   CallExpression: 10
 } extends { [T in TNode['type']]: infer TR } ? TR : never
@@ -37,7 +43,7 @@ type EvalStatements<TStatements extends Statement[]> = TStatements extends [
       ? TResult
       : EvalStatements<TRest>
     : never
-  : never
+  : undefined
 
 type EvalPrefixExpression<TPrefixTokenType extends TokenType, TValue> = {
   [TokenType.BAND]: IsTruthy<TValue> extends true ? false : true
@@ -59,3 +65,9 @@ type _E1 = Eval<Parser<Lexer<'a + b'>>>
 type _E2 = Eval<Parser<Lexer<'!!!!!!!!!0'>>>
 type _E3 = Eval<Parser<Lexer<'(3 + 2) * 5 == 25'>>>
 type _E4 = Eval<Parser<Lexer<'(3 > 2) != (2 > 3)'>>>
+type _E5 = Eval<Parser<Lexer<`if (4 > 4) {
+  4 + 8
+  3 * 3
+} else {
+  9 + 9
+}`>>>
