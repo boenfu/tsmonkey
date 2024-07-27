@@ -51,7 +51,7 @@ export declare enum TokenType {
   //   NULL = 'null',
 }
 
-export interface Token<TType extends TokenType, TLiteral> {
+export interface Token<TType extends TokenType = TokenType, TLiteral = any> {
   type: TType
   literal: TLiteral
 }
