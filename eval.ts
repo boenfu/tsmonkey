@@ -1,13 +1,15 @@
-import type { Lexer } from './lexer'
+import type { Lexer, TokenType } from './lexer'
 import type {
   BooleanLiteral,
   ExpressionStatement,
   IntegerLiteral,
   Node,
   Parser,
+  PrefixExpression,
   Program,
   Statement,
 } from './parser'
+import type { IsTruthy } from './utils'
 
 export type Eval<TNode extends Node> = {
   Program: TNode extends Program<infer TStatements> ? EvalStatements<TStatements> : never
@@ -18,7 +20,7 @@ export type Eval<TNode extends Node> = {
   Identifier: 4
   IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? TValue : never
   BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? TValue : never
-  PrefixExpression: 6
+  PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight>> : never
   InfixExpression: 7
   IfExpression: 8
   FunctionLiteral: 9
@@ -36,5 +38,9 @@ type EvalStatements<TStatements extends Statement[]> = TStatements extends [
     : never
   : never
 
+type EvalPrefixExpression<TPrefixTokenType extends TokenType, TValue> = {
+  [TokenType.BAND]: IsTruthy<TValue> extends true ? false : true
+} extends { [T in TPrefixTokenType]: infer TR } ? TR : never
+
 type _E1 = Eval<Parser<Lexer<'a + b'>>>
-type _E2 = Eval<Parser<Lexer<'1'>>>
+type _E2 = Eval<Parser<Lexer<'!!!!!!!!!0'>>>
