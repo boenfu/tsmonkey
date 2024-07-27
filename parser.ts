@@ -1,92 +1,109 @@
 import type { Lexer, Token, TokenType } from './lexer'
 import type { LT, StringToNumber } from './utils'
 
-interface Node {
+export interface Node {
+  type: string
   token: TokenType
 }
 
-interface Statement extends Node { }
+export interface Statement extends Node { }
 
-interface Expression extends Node { }
+export interface Expression extends Node { }
 
-interface Program<TStatement extends Statement[]> extends Node {
+export interface Program<TStatement extends Statement[]> extends Node {
+  type: 'Program'
   statements: TStatement
 }
 
-interface LetStatement<TName extends Identifier<any>, TValue extends Expression> extends Statement {
+export interface LetStatement<TName extends Identifier<any>, TValue extends Expression> extends Statement {
+  type: 'LetStatement'
   token: TokenType.LET
   name: TName
   value: TValue
 }
 
-interface ReturnStatement<TValue extends Expression> extends Statement {
+export interface ReturnStatement<TValue extends Expression> extends Statement {
+  type: 'ReturnStatement'
   token: TokenType.RETURN
   value: TValue
 }
 
-interface ExpressionStatement<TToken extends TokenType, TValue extends Expression> extends Statement {
+export interface ExpressionStatement<TToken extends TokenType, TValue extends Expression> extends Statement {
+  type: 'ExpressionStatement'
   token: TToken
   value: TValue
 }
 
-interface BlockStatement<TToken extends TokenType = TokenType, TStatement extends Statement[] = any> extends Statement {
+export interface BlockStatement<TToken extends TokenType = TokenType, TStatement extends Statement[] = any> extends Statement {
+  type: 'BlockStatement'
   token: TToken
   statements: TStatement
 }
 
-interface Identifier<TValue> extends Expression {
+export interface Identifier<TValue> extends Expression {
+  type: 'Identifier'
   token: TokenType.IDENT
   value: TValue
 }
 
-interface IntegerLiteral<TValue extends number> extends Expression {
+export interface IntegerLiteral<TValue extends number> extends Expression {
+  type: 'IntegerLiteral'
   token: TokenType.INT
   value: TValue
 }
 
-interface BooleanLiteral<TValue extends boolean> extends Expression {
+export interface BooleanLiteral<TValue extends boolean> extends Expression {
+  type: 'BooleanLiteral'
   token: TValue extends true ? TokenType.TRUE : TokenType.FALSE
   value: TValue
 }
 
-interface PrefixExpression<TToken extends TokenType, TRight extends Expression> extends Expression {
+export interface PrefixExpression<TToken extends TokenType, TRight extends Expression> extends Expression {
+  type: 'PrefixExpression'
   token: TToken
   right: TRight
 }
 
-interface InfixExpression<TToken extends TokenType, TLeft extends Expression, TRight extends Expression> extends Expression {
+export interface InfixExpression<TToken extends TokenType, TLeft extends Expression, TRight extends Expression> extends Expression {
+  type: 'InfixExpression'
   token: TToken
   left: TLeft
   right: TRight
 }
 
-interface IfExpression<TCondition extends Expression, TConsequence, TAlternative extends BlockStatement<any> | undefined> extends Expression {
+export interface IfExpression<TCondition extends Expression, TConsequence, TAlternative extends BlockStatement<any> | undefined> extends Expression {
+  type: 'IfExpression'
   token: TokenType.IF
   condition: TCondition
   consequence: TConsequence
   alternative: TAlternative
 }
 
-interface FunctionLiteral<TParameters extends Identifier<any>[], TBody extends BlockStatement<any>> extends Expression {
+export interface FunctionLiteral<TParameters extends Identifier<any>[], TBody extends BlockStatement<any>> extends Expression {
+  type: 'FunctionLiteral'
   token: TokenType.FUNCTION
   parameters: TParameters
   body: TBody
 }
 
-interface CallExpression<TFunction extends Expression, TArguments extends Expression[]> extends Expression {
+export interface CallExpression<TFunction extends Expression, TArguments extends Expression[]> extends Expression {
+  type: 'CallExpression'
   token: TokenType.LPAREN
   function: TFunction
   arguments: TArguments
 }
 
 type _Parser<TTokens extends Token[], TStatements extends Statement[] = []> = TTokens extends [infer TCur extends Token<any>, ...infer TRest extends Token[]]
-  ? ParseStatement<TCur, TRest> extends [infer TStatement extends Statement, infer TRestTokens extends Token<any>[]] ? _Parser<TRestTokens, [...TStatements, TStatement]> : _Parser<TRest, TStatements>
+  ? ParseStatement<TCur, TRest> extends [infer TStatement extends Statement, infer TRestTokens extends Token<any>[]]
+    ? _Parser<TRestTokens, [...TStatements, TStatement]>
+    : _Parser<TRest, TStatements>
   : TStatements
 
 type ParseStatement<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.LET]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]]
     ? ParseLetStatement<TNextToken, TRest> : never
   [TokenType.RETURN]: ParseReturnStatement<TTokens>
+  [TokenType.EOF]: never
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] }
   ? [TStatement, TRest]
   : ParseExpressionStatement<TToken, TTokens>
@@ -328,7 +345,7 @@ type ParseInfixParseFn<TLeft extends Expression, TToken extends Token, TTokens e
     : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
-type Parser<TTokens extends Token[]> = Program<_Parser<TTokens>>
+export type Parser<TTokens extends Token[]> = Program<_Parser<TTokens>>
 
 type _L1 = Lexer<'1;'>
 type _P1 = Parser<Lexer<'let a = 1; return a;a'>>
