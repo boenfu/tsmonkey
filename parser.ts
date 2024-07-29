@@ -40,7 +40,7 @@ export interface BlockStatement<TToken extends TokenType = TokenType, TStatement
   statements: TStatement
 }
 
-export interface Identifier<TValue> extends Expression {
+export interface Identifier<TValue extends string> extends Expression {
   type: 'Identifier'
   token: TokenType.IDENT
   value: TValue

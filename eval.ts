@@ -3,9 +3,11 @@ import type {
   BlockStatement,
   BooleanLiteral,
   ExpressionStatement,
+  Identifier,
   IfExpression,
   InfixExpression,
   IntegerLiteral,
+  LetStatement,
   Node,
   Parser,
   PrefixExpression,
@@ -17,53 +19,59 @@ import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } fro
 
 type ReturnValue<T = any> = { value: T } & '_returnValue'
 
-export type Eval<TNode extends Node> = {
-  Program: TNode extends Program<infer TStatements> ? EvalProgramStatements<TStatements> : never
-  LetStatement: 1
-  ReturnStatement: TNode extends ReturnStatement<infer TReturnValue> ? Eval<TReturnValue> : never
-  ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression> : never
-  BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements> : never
-  Identifier: 4
-  IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? TValue : never
-  BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? TValue : never
-  PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight>> : never
-  InfixExpression: TNode extends InfixExpression<infer TInfixTokenType, infer TLeft, infer TRight> ? EvalInfixExpression<TInfixTokenType, Eval<TLeft>, Eval<TRight>> : never
+interface Context<TVars extends Record<string, any> = any, TParent extends Context | undefined = undefined> {
+  vars: TVars
+  parent: TParent
+}
+
+// eslint-disable-next-line ts/no-empty-object-type
+export type Eval<TNode extends Node, TContext extends Context = { vars: {}, parent: undefined }> = {
+  Program: TNode extends Program<infer TStatements> ? EvalProgramStatements<TStatements, TContext> : never
+  LetStatement: TNode extends LetStatement<infer TName, infer TValue> ? [TValue, TContext & { vars: TContext['vars'] & { [P in TName['value']]: Eval<TValue, TContext>[0] } }] : never
+  ReturnStatement: TNode extends ReturnStatement<infer TReturnValue> ? Eval<TReturnValue, TContext> : never
+  ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression, TContext> : never
+  BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements, TContext> : never
+  Identifier: TNode extends Identifier<infer TName> ? [Extract<TContext['vars'], { [P in TName]: any }>[TName], TContext] : never
+  IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? [TValue, TContext] : never
+  BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? [TValue, TContext] : never
+  PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight, TContext>[0], TContext> : never
+  InfixExpression: TNode extends InfixExpression<infer TInfixTokenType, infer TLeft, infer TRight> ? EvalInfixExpression<TInfixTokenType, Eval<TLeft, TContext>[0], Eval<TRight, TContext>[0], TContext> : never
   IfExpression: TNode extends IfExpression<infer TCondition, infer TConsequence extends Node, infer TAlternative extends BlockStatement | undefined>
-    ? IsTruthy<Eval<TCondition>> extends true
-      ? Eval<TConsequence>
-      : TAlternative extends Node ? Eval<TAlternative> : undefined
+    ? IsTruthy<Eval<TCondition, TContext>[0]> extends true
+      ? Eval<TConsequence, TContext>
+      : TAlternative extends Node ? Eval<TAlternative, TContext> : undefined
     : never
   FunctionLiteral: 9
   CallExpression: 10
-} extends { [T in TNode['type']]: infer TR } ? TR : never
+} extends { [T in TNode['type']]: infer TR extends [any, Context] } ? TR : never
 
-type EvalProgramStatements<TStatements extends Statement[]> = TStatements extends [
+type EvalProgramStatements<TStatements extends Statement[], TContext extends Context> = TStatements extends [
   infer TStatement extends Statement,
   ...infer TRest extends Statement[],
 ]
-  ? Eval<TStatement> extends infer TResult
+  ? Eval<TStatement, TContext> extends [infer TResult, infer TContext2]
     ? OR<OR<EQ<TRest['length'], 0>, TResult extends ReturnValue ? true : false>, TResult extends ReturnValue ? true : false> extends true
-      ? TResult extends ReturnValue<infer TReturnValue> ? TReturnValue : TResult
-      : EvalProgramStatements<TRest>
+      ? TResult extends ReturnValue<infer TReturnValue> ? [TReturnValue, TContext2] : [TResult, TContext2]
+      : EvalProgramStatements<TRest, TContext>
     : never
   : undefined
 
-type EvalStatements<TStatements extends Statement[]> = TStatements extends [
+type EvalStatements<TStatements extends Statement[], TContext extends Context> = TStatements extends [
   infer TStatement extends Statement,
   ...infer TRest extends Statement[],
 ]
-  ? Eval<TStatement> extends infer TResult
+  ? Eval<TStatement, TContext> extends [infer TResult, infer TContext2]
     ? OR<OR<EQ<TRest['length'], 0>, TResult extends ReturnValue ? true : false>, TResult extends ReturnValue ? true : false> extends true
-      ? TResult extends ReturnValue ? TResult : ReturnValue<TResult>
-      : EvalStatements<TRest>
+      ? TResult extends ReturnValue ? [TResult, TContext2] : [ReturnValue<TResult>, TContext2]
+      : EvalStatements<TRest, TContext>
     : never
   : undefined
 
-type EvalPrefixExpression<TPrefixTokenType extends TokenType, TValue> = {
+type EvalPrefixExpression<TPrefixTokenType extends TokenType, TValue, TContext extends Context> = {
   [TokenType.BAND]: IsTruthy<TValue> extends true ? false : true
-} extends { [T in TPrefixTokenType]: infer TR } ? TR : never
+} extends { [T in TPrefixTokenType]: infer TR } ? [TR, TContext] : never
 
-type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight> = {
+type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight, TContext extends Context> = {
   [TokenType.PLUS]: Plus<TLeft & number, TRight & number>
   [TokenType.MINUS]: Minus<TLeft & number, TRight & number>
   [TokenType.SLASH]: Divide<TLeft & number, TRight & number>
@@ -73,7 +81,7 @@ type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight> = {
   [TokenType.LT]: LT<TLeft & number, TRight & number>
   [TokenType.GT]: GT<TLeft & number, TRight & number>
   [TokenType.LPAREN]: never
-} extends { [T in TInfixTokenType]: infer TR } ? TR : never
+} extends { [T in TInfixTokenType]: infer TR } ? [TR, TContext] : never
 
 type _E1 = Eval<Parser<Lexer<'a + b'>>>
 type _E2 = Eval<Parser<Lexer<'!!!!!!!!!0'>>>
@@ -99,4 +107,9 @@ if (4 > 2) {
   
   return 2
 }
+`>>>
+
+type _E8 = Eval<Parser<Lexer<`
+let a = 7
+a * a
 `>>>
