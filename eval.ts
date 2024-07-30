@@ -1,8 +1,12 @@
+/* eslint-disable ts/no-empty-object-type */
 import type { Lexer, TokenType } from './lexer'
 import type {
   BlockStatement,
   BooleanLiteral,
+  CallExpression,
+  Expression,
   ExpressionStatement,
+  FunctionLiteral,
   Identifier,
   IfExpression,
   InfixExpression,
@@ -19,19 +23,18 @@ import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } fro
 
 type ReturnValue<T = any> = { value: T } & '_returnValue'
 
-interface Context<TVars extends Record<string, any> = any, TParent extends Context | undefined = undefined> {
+interface Context<TVars extends Record<string, any> = any, TParent extends Context | undefined = any> {
   vars: TVars
   parent: TParent
 }
 
-// eslint-disable-next-line ts/no-empty-object-type
 export type Eval<TNode extends Node, TContext extends Context = { vars: {}, parent: undefined }> = {
   Program: TNode extends Program<infer TStatements> ? EvalProgramStatements<TStatements, TContext> : never
   LetStatement: TNode extends LetStatement<infer TName, infer TValue> ? [TValue, TContext & { vars: TContext['vars'] & { [P in TName['value']]: Eval<TValue, TContext>[0] } }] : never
   ReturnStatement: TNode extends ReturnStatement<infer TReturnValue> ? Eval<TReturnValue, TContext> extends [infer TValue, infer TContext2] ? [ ReturnValue<TValue>, TContext2 ] : never : never
   ExpressionStatement: TNode extends ExpressionStatement<any, infer TExpression> ? Eval<TExpression, TContext> : never
   BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements, TContext> : never
-  Identifier: TNode extends Identifier<infer TName> ? [Extract<TContext['vars'], { [P in TName]: any }>[TName], TContext] : never
+  Identifier: [EvalIdentifier<TNode, TContext>, TContext]
   IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? [TValue, TContext] : never
   BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? [TValue, TContext] : never
   PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight, TContext>[0], TContext> : never
@@ -41,9 +44,31 @@ export type Eval<TNode extends Node, TContext extends Context = { vars: {}, pare
       ? Eval<TConsequence, TContext>
       : TAlternative extends Node ? Eval<TAlternative, TContext> : undefined
     : never
-  FunctionLiteral: 9
-  CallExpression: 10
+  FunctionLiteral: TNode extends FunctionLiteral<infer TName, infer TParameters, infer TBody>
+    ? [TName, TContext & { vars: TContext['vars'] & { [P in TName['value']]: FunctionLiteral< TName, TParameters, TBody> } }] : never
+  CallExpression: TNode extends CallExpression<infer TFunction, infer TArguments>
+    ? Eval<TFunction, TContext>[0] extends FunctionLiteral<any, infer TParameters, infer TBody>
+      ? [EvalReturnValue<Eval<TBody, EvalFunctionContext<TParameters, TArguments, { vars: {}, parent: TContext }>>[0]>, TContext]
+      : never
+    : never
 } extends { [T in TNode['type']]: infer TR extends [any, Context] } ? TR : never
+
+type EvalFunctionContext<TParameters extends Identifier<any>[], TArguments extends Expression[], TContext extends Context> =
+TParameters extends [Identifier<infer TParameter>, ...infer TRestParameters extends Identifier<any>[]]
+  ? TArguments extends [infer TArgument extends Node, ...infer TRestArguments extends Expression[]]
+    ? EvalFunctionContext<TRestParameters, TRestArguments, TContext & { vars: TContext['vars'] & { [P in TParameter]: Eval<TArgument, TContext>[0] } }>
+    : never
+  : TContext
+
+type EvalReturnValue<TValue> = TValue extends ReturnValue<infer TReturnValue> ? TReturnValue : TValue
+
+type EvalIdentifier<TIdentifier extends Node, TContext extends Context> = TIdentifier extends Identifier<infer TName>
+  ? TName extends keyof TContext['vars']
+    ? TContext['vars'][TName]
+    : TContext['parent'] extends undefined
+      ? undefined
+      : EvalIdentifier<TIdentifier, TContext['parent']>
+  : never
 
 type EvalProgramStatements<TStatements extends Statement[], TContext extends Context> = TStatements extends [
   infer TStatement extends Statement,
@@ -51,7 +76,7 @@ type EvalProgramStatements<TStatements extends Statement[], TContext extends Con
 ]
   ? Eval<TStatement, TContext> extends [infer TResult, infer TContext2 extends Context]
     ? OR<EQ<TRest['length'], 0>, TResult extends ReturnValue ? true : false> extends true
-      ? TResult extends ReturnValue<infer TReturnValue> ? [TReturnValue, TContext2] : [TResult, TContext2]
+      ? [EvalReturnValue<TResult>, TContext2]
       : EvalProgramStatements<TRest, TContext2>
     : never
   : undefined
@@ -119,4 +144,15 @@ if(a < 5) {
 }
 
 a * a
+`>
+
+type _E9 = REPL<`
+let a = 5
+let b = 10
+
+function foo(a, b) {
+return a - b
+}
+
+foo(b, a)
 `>

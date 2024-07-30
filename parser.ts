@@ -79,9 +79,10 @@ export interface IfExpression<TCondition extends Expression, TConsequence, TAlte
   alternative: TAlternative
 }
 
-export interface FunctionLiteral<TParameters extends Identifier<any>[], TBody extends BlockStatement<any>> extends Expression {
+export interface FunctionLiteral<TName extends Identifier<any>, TParameters extends Identifier<any>[], TBody extends BlockStatement<any>> extends Expression {
   type: 'FunctionLiteral'
   token: TokenType.FUNCTION
+  name: TName
   parameters: TParameters
   body: TBody
 }
@@ -244,6 +245,7 @@ type ParseIfExpression<TTokens extends Token[]> = TTokens extends [
   : never
 
 type ParseFunctionExpression<TTokens extends Token[]> = TTokens extends [
+  Token<TokenType.IDENT, infer TName extends string>,
   Token<TokenType.LPAREN>,
   infer TNextToken extends Token,
   ...infer TRest extends Token[],
@@ -264,7 +266,7 @@ type ParseFunctionExpression<TTokens extends Token[]> = TTokens extends [
       infer TRest3 extends Token[],
     ]
       ? [
-          FunctionLiteral<TParameters, TBody>,
+          FunctionLiteral<Identifier<TName>, TParameters, TBody>,
           TRest3,
         ]
       : never
