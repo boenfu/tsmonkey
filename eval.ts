@@ -44,7 +44,7 @@ export type Eval<TNode extends Node, TContext extends Context = { vars: {}, pare
   IfExpression: TNode extends IfExpression<infer TCondition, infer TConsequence extends Node, infer TAlternative extends BlockStatement | undefined>
     ? IsTruthy<Eval<TCondition, TContext>[0]> extends true
       ? Eval<TConsequence, TContext>
-      : TAlternative extends Node ? Eval<TAlternative, TContext> : undefined
+      : TAlternative extends Node ? Eval<TAlternative, TContext> : [void, TContext]
     : never
   FunctionLiteral: TNode extends FunctionLiteral<infer TName, infer TParameters, infer TBody>
     ? [TName, TContext & { vars: TContext['vars'] & { [P in TName['value']]: FunctionLiteral< TName, TParameters, TBody> } }] : never
@@ -164,3 +164,13 @@ let a = "玛咖巴卡"
 
 return a
 `>>>[0]
+
+type _E11 = REPL<`
+function fibonacciRecursive(n) {
+  if (n < 2) { return 0 } 
+  if (n == 2) { return 1 }
+  return fibonacciRecursive(n-1) + fibonacciRecursive(n - 2)
+}
+
+fibonacciRecursive(6)
+`>
