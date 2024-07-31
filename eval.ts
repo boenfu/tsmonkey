@@ -58,7 +58,7 @@ export type Eval<TNode extends Node, TContext extends Context = { vars: {}, pare
 type EvalFunctionContext<TParameters extends Identifier<any>[], TArguments extends Expression[], TContext extends Context> =
 TParameters extends [Identifier<infer TParameter>, ...infer TRestParameters extends Identifier<any>[]]
   ? TArguments extends [infer TArgument extends Node, ...infer TRestArguments extends Expression[]]
-    ? EvalFunctionContext<TRestParameters, TRestArguments, TContext & { vars: TContext['vars'] & { [P in TParameter]: Eval<TArgument, TContext>[0] } }>
+    ? EvalFunctionContext<TRestParameters, TRestArguments, TContext & { vars: TContext['vars'] & { [P in TParameter]: Eval<TArgument, TContext['parent']>[0] } }>
     : never
   : TContext
 
@@ -153,7 +153,7 @@ let a = 5
 let b = 10
 
 function foo(a, b) {
-return a - b
+  return a - b
 }
 
 foo(b, a)
