@@ -5,6 +5,7 @@ export declare enum TokenType {
   // 标识符 + 字面量
   IDENT = 'IDENT',
   INT = 'INT',
+  STRING = '"',
 
   // 运算符
   ASSIGN = '=',
@@ -96,11 +97,19 @@ export type Lexer<TCode extends string> = TCode extends `${infer TCh}${infer TRe
         // 未命中 token 跳过
         ? Lexer<TRest>
         // 能匹配上的 token 先尝试匹配双字符
-        : ReadTwoCharToken<TCode> extends [infer TCh, infer TRest extends string] ?
-            [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
-          : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
+        : ReadTwoCharToken<TCode> extends [infer TCh extends string, infer TRest extends string]
+          ? ReadMultiCharToken<TCh, TRest>
+          : ReadMultiCharToken<TCh, TRest>
   // 文件结束
   : [Token<TokenType.EOF, ''>]
+
+type ReadMultiCharToken<TCh extends string, TRest extends string> = {
+  [TokenType.STRING]: TRest extends `${infer TString}"${infer TRest}` ? [TString, TRest] : never
+} extends {
+  [P in Extract<TokenType, TCh>]: [infer TR, infer TRest extends string]
+}
+  ? [Token<Extract<TokenType, TCh>, TR>, ...Lexer<TRest>]
+  : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
 
 type _L1 = Lexer<`
 let a = 8
@@ -108,3 +117,7 @@ let a = 8
 if (a != b) {
   a = 10
 }`>
+
+type _L2 = Lexer<`
+let a = "如果你要写年"
+`>

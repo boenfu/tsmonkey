@@ -52,6 +52,12 @@ export interface IntegerLiteral<TValue extends number> extends Expression {
   value: TValue
 }
 
+export interface StringLiteral<TValue extends string> extends Expression {
+  type: 'StringLiteral'
+  token: TokenType.STRING
+  value: TValue
+}
+
 export interface BooleanLiteral<TValue extends boolean> extends Expression {
   type: 'BooleanLiteral'
   token: TValue extends true ? TokenType.TRUE : TokenType.FALSE
@@ -286,6 +292,7 @@ type ParseFunctionParameters<TToken extends Token, TTokens extends Token[], TPar
 type ParsePrefixParseFn<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.IDENT]: [Identifier<TToken['literal']>, TTokens]
   [TokenType.INT]: [IntegerLiteral<StringToNumber<TToken['literal']>>, TTokens]
+  [TokenType.STRING]: [StringLiteral<TToken['literal']>, TTokens]
   [TokenType.TRUE]: [BooleanLiteral<true>, TTokens]
   [TokenType.FALSE]: [BooleanLiteral<false>, TTokens]
   [TokenType.BAND]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]

@@ -18,6 +18,7 @@ import type {
   Program,
   ReturnStatement,
   Statement,
+  StringLiteral,
 } from './parser'
 import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
 
@@ -36,6 +37,7 @@ export type Eval<TNode extends Node, TContext extends Context = { vars: {}, pare
   BlockStatement: TNode extends BlockStatement<any, infer TStatements> ? EvalStatements<TStatements, TContext> : never
   Identifier: [EvalIdentifier<TNode, TContext>, TContext]
   IntegerLiteral: TNode extends IntegerLiteral<infer TValue> ? [TValue, TContext] : never
+  StringLiteral: TNode extends StringLiteral<infer TValue> ? [TValue, TContext] : never
   BooleanLiteral: TNode extends BooleanLiteral<infer TValue> ? [TValue, TContext] : never
   PrefixExpression: TNode extends PrefixExpression<infer TPrefix, infer TRight> ? EvalPrefixExpression<TPrefix, Eval<TRight, TContext>[0], TContext> : never
   InfixExpression: TNode extends InfixExpression<infer TInfixTokenType, infer TLeft, infer TRight> ? EvalInfixExpression<TInfixTokenType, Eval<TLeft, TContext>[0], Eval<TRight, TContext>[0], TContext> : never
@@ -156,3 +158,9 @@ return a - b
 
 foo(b, a)
 `>
+
+type _E10 = Eval<Parser<Lexer<`
+let a = "玛咖巴卡"
+
+return a
+`>>>[0]
