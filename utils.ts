@@ -2,11 +2,16 @@
 type _Array<TSize extends number, TR extends number[] = []> = TR['length'] extends TSize ? TR : _Array<TSize, [...TR, 1]>
 
 export type Plus<TA extends number, TB extends number> = [..._Array<TA>, ..._Array<TB>]['length']
-export type Minus<TA extends number, TB extends number> = TB extends 0 ? TA : _Array<TA> extends [..._Array<TB>, ...infer TR] ? TR['length'] : never
+export type Minus<TA extends number, TB extends number> = TB extends 0
+  ? TA
+  : _Array<TA> extends [..._Array<TB>, ...infer TR]
+    ? TR['length']
+    : never
 
 // @ts-expect-error
 export type Multiply<TA extends number, TB extends number> = TB extends 0 ? 0 : _Array<TA> extends infer TR ? Plus<TR['length'], Multiply<TA, Minus<TB, 1>>> : never
-export type Divide<TA extends number, TB extends number> = TB extends 0 ? never : _Array<TA> extends [..._Array<TB>, ...infer TR] ? [...TR, 1]['length'] : never
+// @ts-expect-error
+export type Divide<TA extends number, TB extends number> = TB extends 0 ? never : _Array<TA> extends [..._Array<TB>, ...infer TR] ? Plus<Divide<TR['length'], TB>, 1> : 0
 
 // @ts-expect-error
 export type Pow<TA extends number, TB extends number> = TB extends 0 ? 1 : _Array<TA> extends infer TR ? Multiply<TR['length'], Pow<TA, Minus<TB, 1>>> : never
