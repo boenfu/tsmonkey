@@ -1,6 +1,6 @@
 {
-  "name": "tsmonkey",
-  "version": "0.1.0",
+  "name": "@boenfu/tsmonkey",
+  "version": "0.0.1",
   "description": "",
   "author": "boenfu",
   "license": "MIT",
@@ -21,5 +21,8 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.24.1",
     "eslint": "^9.8.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

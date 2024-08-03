@@ -1,12 +1,12 @@
 ## 🐒 TSMonkey
 
 ```bash
-npm install tsmonkey
+npm install @boenfu/tsmonkey
 ```
 
 ### Eval
 ```typescript
-import type { Eval } from 'tsmonkey'
+import type { Eval } from '@boenfu/tsmonkey'
 
 Eval<'4 + 8'> // 12
 Eval<'2 * (4 + 8)'> // 24
@@ -72,14 +72,14 @@ fibonacci(6)
 ```
 ### Parser
 ```typescript
-import type { Parser } from 'tsmonkey'
+import type { Parser } from '@boenfu/tsmonkey'
 Parser<'let a = "如果你要写年"'>
 // Program<[LetStatement<Identifier<"a">, StringLiteral<"如果你要写年">>]>
 ```
 
 ### Lexer
 ```typescript
-import type { Lexer } from 'tsmonkey'
+import type { Lexer } from '@boenfu/tsmonkey'
 Lexer<'let a = "如果你要写年"'>
 // [
 //   Token<TokenType.LET, "let">,
