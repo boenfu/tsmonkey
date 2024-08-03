@@ -117,14 +117,14 @@ type ParseStatement<TToken extends Token, TTokens extends Token[]> = {
 
 type ParseLetStatement<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.IDENT]: TTokens extends [Token<TokenType.ASSIGN>, ...infer TRest extends Token[]]
-    ? ParseExpression2<Priority.LOWEST, TRest> extends [infer TExpression extends Expression, infer TRest2 extends Token[]]
+    ? ParseExpression2<Precedence.LOWEST, TRest> extends [infer TExpression extends Expression, infer TRest2 extends Token[]]
       ? [LetStatement<Identifier<TToken['literal']>, TExpression>, TRest2]
       : never
     : never
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : []
 
 type ParseReturnStatement<TTokens extends Token[]> =
-ParseExpression2<Priority.LOWEST, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
+ParseExpression2<Precedence.LOWEST, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
   ? [ReturnStatement<TExpression>, TRest]
   : [ReturnStatement<Expression>, TTokens]
 
@@ -154,60 +154,64 @@ type ParseBlockStatement2<TTokens extends Token[], TStatements extends Statement
   ? ParseBlockStatement<TToken, TRest, TStatements>
   : never
 
-declare enum Priority {
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
+declare enum Precedence {
   LOWEST = 1,
-  EQUALS = 2, // ==
-  LESSGREATER = 3, // > or <
-  SUM = 4, // +
-  PRODUCT = 5, // *
-  PREFIX = 6, // -X or !X
-  CALL = 7, // myFunction(X)
-  INDEX = 8, // array[index], map[key]
+  OR = 3,
+  AND = 4,
+  EQUALS = 8, // ==
+  LESSGREATER = 9, // > or <
+  SUM = 11, // +
+  PRODUCT = 12, // *
+  PREFIX = 14, // -X or !X
+  ACCESS_AND_CALL = 17, // myFunction(X)
 }
 
-interface PriorityMap {
-  [TokenType.EQ]: Priority.EQUALS
-  [TokenType.NEQ]: Priority.EQUALS
-  [TokenType.LT]: Priority.LESSGREATER
-  [TokenType.GT]: Priority.LESSGREATER
-  [TokenType.LE]: Priority.LESSGREATER
-  [TokenType.GE]: Priority.LESSGREATER
-  [TokenType.PLUS]: Priority.SUM
-  [TokenType.MINUS]: Priority.SUM
-  [TokenType.SLASH]: Priority.PRODUCT
-  [TokenType.ASTERISK]: Priority.PRODUCT
-  [TokenType.LPAREN]: Priority.CALL
+interface PrecedenceMap {
+  [TokenType.EQ]: Precedence.EQUALS
+  [TokenType.NEQ]: Precedence.EQUALS
+  [TokenType.LT]: Precedence.LESSGREATER
+  [TokenType.GT]: Precedence.LESSGREATER
+  [TokenType.LE]: Precedence.LESSGREATER
+  [TokenType.GE]: Precedence.LESSGREATER
+  [TokenType.PLUS]: Precedence.SUM
+  [TokenType.MINUS]: Precedence.SUM
+  [TokenType.SLASH]: Precedence.PRODUCT
+  [TokenType.ASTERISK]: Precedence.PRODUCT
+  [TokenType.LPAREN]: Precedence.ACCESS_AND_CALL
+  [TokenType.AND]: Precedence.AND
+  [TokenType.OR]: Precedence.OR
 }
 
-type GetPriority<TToken extends TokenType> = PriorityMap extends { [P in TToken]: infer TPriority extends number } ? TPriority : Priority.LOWEST
+type GetPrecedence<TToken extends TokenType> = PrecedenceMap extends { [P in TToken]: infer TPrecedence extends number } ? TPrecedence : Precedence.LOWEST
 
 type ParseExpressionStatement<TToken extends Token, TTokens extends Token[]> =
-ParseExpression<Priority.LOWEST, TToken, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
+ParseExpression<Precedence.LOWEST, TToken, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
   ? [ExpressionStatement<TToken['type'], TExpression>, TRest]
   : []
 
-type ParseExpression<TPriority extends Priority, TToken extends Token, TTokens extends Token[]> =
+type ParseExpression<TPrecedence extends Precedence, TToken extends Token, TTokens extends Token[]> =
 ParsePrefixParseFn<TToken, TTokens> extends [infer TLeft extends Expression, [infer TNextToken extends Token, ...infer TRest extends Token[]]]
-  ? ParseInfixParseLoop<TPriority, TLeft, TNextToken, TRest>
+  ? ParseInfixParseLoop<TPrecedence, TLeft, TNextToken, TRest>
   : never
 
-type ParseInfixParseLoop<TPriority extends Priority, TLeft extends Expression, TToken extends Token, TTokens extends Token[]> =
-LT<TPriority, GetPriority<TToken['type']>> extends true
+type ParseInfixParseLoop<TPrecedence extends Precedence, TLeft extends Expression, TToken extends Token, TTokens extends Token[]> =
+LT<TPrecedence, GetPrecedence<TToken['type']>> extends true
   ? ParseInfixParseFn< TLeft, TToken, TTokens> extends [infer TExpression extends Expression, [infer TNextToken extends Token, ...infer TRest extends Token[]]]
-    ? ParseInfixParseLoop<TPriority, TExpression, TNextToken, TRest>
+    ? ParseInfixParseLoop<TPrecedence, TExpression, TNextToken, TRest>
     : [TLeft, [TToken, ...TTokens]]
   : [TLeft, [TToken, ...TTokens]]
 
-type ParseExpression2<TPriority extends Priority, TTokens extends Token[]> = TTokens extends
+type ParseExpression2<TPrecedence extends Precedence, TTokens extends Token[]> = TTokens extends
 [infer TToken extends Token, ...infer TRest extends Token[]]
-  ? ParseExpression<TPriority, TToken, TRest>
+  ? ParseExpression<TPrecedence, TToken, TRest>
   : never
 
 type ParseIfExpression<TTokens extends Token[]> = TTokens extends [
   Token<TokenType.LPAREN>,
   ...infer TRest extends Token[],
 ]
-  ? ParseExpression2< Priority.LOWEST, TRest> extends
+  ? ParseExpression2< Precedence.LOWEST, TRest> extends
   [
     infer TCondition extends Expression,
     [
@@ -297,11 +301,11 @@ type ParsePrefixParseFn<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.STRING]: [StringLiteral<TToken['literal']>, TTokens]
   [TokenType.TRUE]: [BooleanLiteral<true>, TTokens]
   [TokenType.FALSE]: [BooleanLiteral<false>, TTokens]
-  [TokenType.BAND]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
+  [TokenType.BAND]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
     ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
-  [TokenType.MINUS]: ParseExpression2<Priority.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
+  [TokenType.MINUS]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
     ? [PrefixExpression<TokenType.MINUS, TExpression>, TRest] : never
-  [TokenType.LPAREN]: ParseExpression2<Priority.LOWEST, TTokens> extends [infer TExpression extends Expression, [Token<TokenType.RPAREN>, ...infer TRest]]
+  [TokenType.LPAREN]: ParseExpression2<Precedence.LOWEST, TTokens> extends [infer TExpression extends Expression, [Token<TokenType.RPAREN>, ...infer TRest]]
     ? [TExpression, TRest] : never
   [TokenType.IF]: ParseIfExpression<TTokens>
   [TokenType.FUNCTION]: ParseFunctionExpression<TTokens>
@@ -319,14 +323,14 @@ type ParseCallArguments<TToken extends Token, TTokens extends Token[], TArgument
   [TokenType.RPAREN]: [TArguments, TTokens]
 } extends { [T in TToken['type']]: [infer TResult extends Expression[], infer TRest] }
   ? [TResult, TRest]
-  : ParseExpression<Priority.LOWEST, TToken, TTokens> extends [
+  : ParseExpression<Precedence.LOWEST, TToken, TTokens> extends [
     infer TArgument extends Expression,
     [infer TNextToken extends Token, ...infer TRest2 extends Token[]],
   ]
     ? ParseCallArguments<TNextToken, TRest2, [...TArguments, TArgument]>
     : []
 
-type DefaultInfixExpression<TToken extends keyof PriorityMap, TLeft extends Expression, TTokens extends Token[]> = ParseExpression2<PriorityMap[TToken], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
+type DefaultInfixExpression<TToken extends keyof PrecedenceMap, TLeft extends Expression, TTokens extends Token[]> = ParseExpression2<PrecedenceMap[TToken], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
   ? [InfixExpression<TToken, TLeft, TRight>, TRest]
   : never
 
@@ -341,6 +345,8 @@ type ParseInfixParseFn<TLeft extends Expression, TToken extends Token, TTokens e
   [TokenType.GT]: DefaultInfixExpression<TokenType.GT, TLeft, TTokens>
   [TokenType.LE]: DefaultInfixExpression<TokenType.LE, TLeft, TTokens>
   [TokenType.GE]: DefaultInfixExpression<TokenType.GE, TLeft, TTokens>
+  [TokenType.AND]: DefaultInfixExpression<TokenType.AND, TLeft, TTokens>
+  [TokenType.OR]: DefaultInfixExpression<TokenType.OR, TLeft, TTokens>
   [TokenType.LPAREN]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]] ? ParseCallExpression<TLeft, TNextToken, TRest> : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 

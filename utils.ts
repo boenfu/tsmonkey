@@ -24,9 +24,9 @@ export type IsTruthy<T> = T extends Falsy ? false : true
 
 type Compare<TA extends number, TB extends number> = _Array<TA> extends [..._Array<TB>, ...infer TRest] ? TRest['length'] extends 0 ? '=' : '>' : '<'
 
-export type AND<TA, TB> = TA extends true ? TB extends true ? true : false : false
+export type AND<TA, TB> = IsTruthy<TA> extends true ? TB : TA
 
-export type OR<TA, TB> = TA extends true ? true : TB extends true ? true : false
+export type OR<TA, TB> = IsTruthy<TA> extends true ? TA : TB
 
 export type EQ<TA, TB> = TA extends TB ? (TB extends TA ? true : false) : false
 

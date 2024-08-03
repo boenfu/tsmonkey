@@ -14,6 +14,8 @@ export declare enum TokenType {
   BAND = '!',
   ASTERISK = '*',
   SLASH = '/',
+  BITWISE_OR = '|',
+  BITWISE_AND = '&',
 
   EQ = '==',
   NEQ = '!=',
@@ -22,8 +24,8 @@ export declare enum TokenType {
   GT = '>',
   LE = '<=',
   GE = '>=',
-  //   AND = '&&',
-  //   OR = '||',
+  OR = '||',
+  AND = '&&',
 
   // 分隔符
   COMMA = ',',

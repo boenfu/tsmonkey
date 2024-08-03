@@ -19,7 +19,7 @@ import type {
   Statement,
   StringLiteral,
 } from './parser'
-import type { Divide, EQ, GE, GT, IsTruthy, LE, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
+import type { AND, Divide, EQ, GE, GT, IsTruthy, LE, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
 
 declare const ReturnTypeTag: symbol
 
@@ -108,7 +108,10 @@ type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight, TCont
   [TokenType.GT]: GT<TLeft & number, TRight & number>
   [TokenType.LE]: LE<TLeft & number, TRight & number>
   [TokenType.GE]: GE<TLeft & number, TRight & number>
+  [TokenType.AND]: AND<TLeft, TRight>
+  [TokenType.OR]: OR<TLeft, TRight>
   [TokenType.LPAREN]: never
 } extends { [T in TInfixTokenType]: infer TR } ? [TR, TContext] : never
 
+// @ts-expect-error ts(2589)
 export type Eval<T extends string> = EvalNode<Parser<Lexer<T>>>[0]

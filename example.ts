@@ -145,3 +145,27 @@ if(5 >= 14) {
   }
 }
 `>
+
+type AND_OR_false = Eval<`
+if(5 && 0) {
+  return 6 
+} else {
+  if(false || 12) {
+    return false
+  } else {
+    return 0
+  }
+}
+`>
+
+type AND_OR_2 = Eval<`
+if(5 && (0 || 8) && false) {
+  return 6 
+} else {
+  if(false || (12 && 8)) {
+    return false
+  } else {
+    return 0
+  }
+}
+`>
