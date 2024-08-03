@@ -113,5 +113,4 @@ type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight, TCont
   [TokenType.LPAREN]: never
 } extends { [T in TInfixTokenType]: infer TR } ? [TR, TContext] : never
 
-// @ts-expect-error ts(2589)
 export type Eval<T extends string> = EvalNode<Parser<Lexer<T>>>[0]

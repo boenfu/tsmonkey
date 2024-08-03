@@ -107,8 +107,7 @@ type _Parser<TTokens extends Token[], TStatements extends Statement[] = []> = TT
   : TStatements
 
 type ParseStatement<TToken extends Token, TTokens extends Token[]> = {
-  [TokenType.LET]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]]
-    ? ParseLetStatement<TNextToken, TRest> : never
+  [TokenType.LET]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]] ? ParseLetStatement<TNextToken, TRest> : never
   [TokenType.RETURN]: ParseReturnStatement<TTokens>
   [TokenType.EOF]: never
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] }
@@ -117,8 +116,8 @@ type ParseStatement<TToken extends Token, TTokens extends Token[]> = {
 
 type ParseLetStatement<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.IDENT]: TTokens extends [Token<TokenType.ASSIGN>, ...infer TRest extends Token[]]
-    ? ParseExpression2<Precedence.LOWEST, TRest> extends [infer TExpression extends Expression, infer TRest2 extends Token[]]
-      ? [LetStatement<Identifier<TToken['literal']>, TExpression>, TRest2]
+    ? ParseExpression2<Precedence.LOWEST, TRest> extends [infer TExpression extends Expression, infer TRest extends Token[]]
+      ? [LetStatement<Identifier<TToken['literal']>, TExpression>, TRest]
       : never
     : never
 } extends { [T in TToken['type']]: [infer TStatement, infer TRest] } ? [TStatement, TRest] : []
@@ -132,25 +131,13 @@ type ParseBlockStatement<TToken extends Token, TTokens extends Token[], TStateme
   [TokenType.RBRACE]: true
   [TokenType.EOF]: true
 } extends { [T in TToken['type']]: true }
-  ? [
-      BlockStatement<TToken['type'], TStatements>,
-      TTokens,
-    ]
-  : ParseStatement<TToken, TTokens> extends [
-    infer TStatement extends Statement,
-    infer TRest extends Token[],
-  ]
+  ? [BlockStatement<TToken['type'], TStatements>, TTokens ]
+  : ParseStatement<TToken, TTokens> extends [ infer TStatement extends Statement, infer TRest extends Token[] ]
     ? ParseBlockStatement2<TRest, [...TStatements, TStatement]>
-    : [
-        BlockStatement<TToken['type'], TStatements>,
-        TTokens,
-      ]
+    : [BlockStatement<TToken['type'], TStatements>, TTokens ]
 
 type ParseBlockStatement2<TTokens extends Token[], TStatements extends Statement[] = []> = TTokens extends
-[
-  infer TToken extends Token,
-  ...infer TRest extends Token[],
-]
+[infer TToken extends Token, ...infer TRest extends Token[]]
   ? ParseBlockStatement<TToken, TRest, TStatements>
   : never
 
@@ -212,46 +199,19 @@ type ParseIfExpression<TTokens extends Token[]> = TTokens extends [
   ...infer TRest extends Token[],
 ]
   ? ParseExpression2< Precedence.LOWEST, TRest> extends
-  [
-    infer TCondition extends Expression,
-    [
-      Token<TokenType.RPAREN>,
-      Token<TokenType.LBRACE>,
-      infer TNextToken extends Token,
-      ...infer TRest2 extends Token[],
-    ],
-  ]
-    ? ParseBlockStatement<TNextToken, TRest2, []> extends
-    [
-      infer TConsequence extends BlockStatement<any>,
-      infer TRest3 extends Token[],
-    ]
-      ? TRest3 extends [
-        // 有 else 分支
-        Token<TokenType.ELSE>,
-        ...infer TRest4 extends Token[],
-      ]
-        ? TRest4 extends [
-          Token<TokenType.LBRACE>,
-          infer TNextToken2 extends Token,
-          ...infer TRest5 extends Token[],
-        ]
-          ? ParseBlockStatement<TNextToken2, TRest5, []> extends
-          [
-            infer TAlternative extends BlockStatement<any>,
-            infer TRest6 extends Token[],
-          ]
+  [infer TCondition extends Expression, [Token<TokenType.RPAREN>, Token<TokenType.LBRACE>, infer TNextToken extends Token, ...infer TRest extends Token[] ] ]
+    ? ParseBlockStatement<TNextToken, TRest, []> extends
+    [infer TConsequence extends BlockStatement<any>, infer TRest extends Token[] ]
+    // 有 else 分支
+      ? TRest extends [Token<TokenType.ELSE>, ...infer TRest extends Token[] ]
+        ? TRest extends [Token<TokenType.LBRACE>, infer TNextToken2 extends Token, ...infer TRest extends Token[] ]
+          ? ParseBlockStatement<TNextToken2, TRest, []> extends
+          [infer TAlternative extends BlockStatement<any>, infer TRest extends Token[] ]
             ?
-              [
-                IfExpression<TCondition, TConsequence, TAlternative>,
-                TRest6,
-              ]
+              [IfExpression<TCondition, TConsequence, TAlternative>, TRest ]
             : never
           : never
-        : [
-            IfExpression<TCondition, TConsequence, undefined>,
-            TRest3,
-          ]
+        : [IfExpression<TCondition, TConsequence, undefined>, TRest ]
       : never
     : never
   : never
@@ -263,24 +223,9 @@ type ParseFunctionExpression<TTokens extends Token[]> = TTokens extends [
   ...infer TRest extends Token[],
 ]
   ? ParseFunctionParameters<TNextToken, TRest, []> extends
-  [
-    infer TParameters extends Identifier<any>[],
-    [
-      Token<TokenType.LBRACE>,
-      infer TNextToken2 extends Token,
-      ...infer TRest2 extends Token[],
-    ],
-  ]
-    ?
-    ParseBlockStatement<TNextToken2, TRest2, []> extends
-    [
-      infer TBody extends BlockStatement<any>,
-      infer TRest3 extends Token[],
-    ]
-      ? [
-          FunctionLiteral<Identifier<TName>, TParameters, TBody>,
-          TRest3,
-        ]
+  [infer TParameters extends Identifier<any>[], [ Token<TokenType.LBRACE>, infer TNextToken2 extends Token, ...infer TRest extends Token[] ] ]
+    ? ParseBlockStatement<TNextToken2, TRest, []> extends [infer TBody extends BlockStatement<any>, infer TRest extends Token[] ]
+      ? [FunctionLiteral<Identifier<TName>, TParameters, TBody>, TRest ]
       : never
     : never
   : never
@@ -301,12 +246,9 @@ type ParsePrefixParseFn<TToken extends Token, TTokens extends Token[]> = {
   [TokenType.STRING]: [StringLiteral<TToken['literal']>, TTokens]
   [TokenType.TRUE]: [BooleanLiteral<true>, TTokens]
   [TokenType.FALSE]: [BooleanLiteral<false>, TTokens]
-  [TokenType.BAND]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
-    ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
-  [TokenType.MINUS]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest]
-    ? [PrefixExpression<TokenType.MINUS, TExpression>, TRest] : never
-  [TokenType.LPAREN]: ParseExpression2<Precedence.LOWEST, TTokens> extends [infer TExpression extends Expression, [Token<TokenType.RPAREN>, ...infer TRest]]
-    ? [TExpression, TRest] : never
+  [TokenType.BAND]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest] ? [PrefixExpression<TokenType.BAND, TExpression>, TRest] : never
+  [TokenType.MINUS]: ParseExpression2<Precedence.PREFIX, TTokens> extends [infer TExpression extends Expression, infer TRest] ? [PrefixExpression<TokenType.MINUS, TExpression>, TRest] : never
+  [TokenType.LPAREN]: ParseExpression2<Precedence.LOWEST, TTokens> extends [infer TExpression extends Expression, [Token<TokenType.RPAREN>, ...infer TRest]] ? [TExpression, TRest] : never
   [TokenType.IF]: ParseIfExpression<TTokens>
   [TokenType.FUNCTION]: ParseFunctionExpression<TTokens>
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
@@ -323,11 +265,8 @@ type ParseCallArguments<TToken extends Token, TTokens extends Token[], TArgument
   [TokenType.RPAREN]: [TArguments, TTokens]
 } extends { [T in TToken['type']]: [infer TResult extends Expression[], infer TRest] }
   ? [TResult, TRest]
-  : ParseExpression<Precedence.LOWEST, TToken, TTokens> extends [
-    infer TArgument extends Expression,
-    [infer TNextToken extends Token, ...infer TRest2 extends Token[]],
-  ]
-    ? ParseCallArguments<TNextToken, TRest2, [...TArguments, TArgument]>
+  : ParseExpression<Precedence.LOWEST, TToken, TTokens> extends [infer TArgument extends Expression, [infer TNextToken extends Token, ...infer TRest extends Token[]] ]
+    ? ParseCallArguments<TNextToken, TRest, [...TArguments, TArgument]>
     : []
 
 type DefaultInfixExpression<TToken extends keyof PrecedenceMap, TLeft extends Expression, TTokens extends Token[]> = ParseExpression2<PrecedenceMap[TToken], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
@@ -350,5 +289,4 @@ type ParseInfixParseFn<TLeft extends Expression, TToken extends Token, TTokens e
   [TokenType.LPAREN]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]] ? ParseCallExpression<TLeft, TNextToken, TRest> : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
-// @ts-expect-error ts(2589)
 export type Parser<TTokens extends Token[]> = Program<_Parser<TTokens>>

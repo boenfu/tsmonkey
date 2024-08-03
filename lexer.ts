@@ -39,19 +39,11 @@ export declare enum TokenType {
   // 关键字
   FUNCTION = 'function',
   LET = 'let',
-  VAR = 'var',
   TRUE = 'true',
   FALSE = 'false',
   IF = 'if',
   ELSE = 'else',
   RETURN = 'return',
-  //   WHILE = 'while',
-  //   FOR = 'for',
-  //   CONTINUE = 'continue',
-  //   BREAK = 'break',
-  //   NEW = 'new',
-  //   THIS = 'this',
-  //   NULL = 'null',
 }
 
 export interface Token<TType extends TokenType = TokenType, TLiteral = any> {

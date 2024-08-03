@@ -1,4 +1,4 @@
-import type { Eval, Expression, Lexer, Parser, Program } from 'tsmonkey'
+import type { Eval, Expression, Lexer, Parser, Program } from './index'
 
 type _L1 = Lexer<`
 let a = 8
