@@ -1,4 +1,4 @@
-import type { Lexer, Token, TokenType } from './lexer'
+import type { Token, TokenType } from './lexer'
 import type { LT, StringToNumber } from './utils'
 
 export interface Node {
@@ -100,8 +100,8 @@ export interface CallExpression<TFunction extends Expression, TArguments extends
   arguments: TArguments
 }
 
-type _Parser<TTokens extends Token[], TStatements extends Statement[] = []> = TTokens extends [infer TCur extends Token<any>, ...infer TRest extends Token[]]
-  ? ParseStatement<TCur, TRest> extends [infer TStatement extends Statement, infer TRestTokens extends Token<any>[]]
+type _Parser<TTokens extends Token[], TStatements extends Statement[] = []> = TTokens extends [infer TCur extends Token, ...infer TRest extends Token[]]
+  ? ParseStatement<TCur, TRest> extends [infer TStatement extends Statement, infer TRestTokens extends Token[]]
     ? _Parser<TRestTokens, [...TStatements, TStatement]>
     : _Parser<TRest, TStatements>
   : TStatements
@@ -180,7 +180,7 @@ interface PriorityMap {
 type GetPriority<TToken extends TokenType> = PriorityMap extends { [P in TToken]: infer TPriority extends number } ? TPriority : Priority.LOWEST
 
 type ParseExpressionStatement<TToken extends Token, TTokens extends Token[]> =
-ParseExpression<Priority.LOWEST, TToken, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token<any>[]]
+ParseExpression<Priority.LOWEST, TToken, TTokens> extends [infer TExpression extends Expression, infer TRest extends Token[]]
   ? [ExpressionStatement<TToken['type'], TExpression>, TRest]
   : []
 
@@ -354,49 +354,5 @@ type ParseInfixParseFn<TLeft extends Expression, TToken extends Token, TTokens e
     : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
+// @ts-expect-error ts(2589)
 export type Parser<TTokens extends Token[]> = Program<_Parser<TTokens>>
-
-type _L1 = Lexer<'1;'>
-type _P1 = Parser<Lexer<'let a = 1; return a;a'>>
-type _P2 = Parser<Lexer<'18;99'>>
-type _P3 = Parser<Lexer<'-18'>>
-type _P4 = Parser<Lexer<'!18'>>
-
-type _P5 = Parser<Lexer<'a + b + c'>>
-type _P5N = PN<Parser<Lexer<'a / b * c'>>, 0>
-
-type _P6 = Parser<Lexer<'tre false true'>>
-
-type _P7 = PN<Parser<Lexer<'(a + 1) * 2'>>, 0>
-
-type _P8 = PN<Parser<Lexer<`
-a + 1
-if(a * b) {
-  a + b
-} else {
- a / b
-}
-
-8 + 8
-
-`>>, 1>
-
-type _P9 = PN<Parser<Lexer<`
-a + 1
-function(a, b) {
-  a + b
-}
-
-8 + 8
-`>>, 1>
-
-type _P10 = PN<Parser<Lexer<`function(b, c){}(b, c);`>>, 0>
-
-type _P11 = PN<Parser<Lexer<`let a = 1`>>, 0>
-type _P12 = PN<Parser<Lexer<`return 8 + 9`>>, 0>
-
-type PN<TP extends Program<any>, N extends number> = TP extends Program<infer TStatements> ? TStatements[N] : never
-
-export interface Debug<V> extends Expression {
-  v: V
-}

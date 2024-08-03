@@ -110,14 +110,3 @@ type ReadMultiCharToken<TCh extends string, TRest extends string> = {
 }
   ? [Token<Extract<TokenType, TCh>, TR>, ...Lexer<TRest>]
   : [Token<Extract<TokenType, TCh>, TCh>, ...Lexer<TRest>]
-
-type _L1 = Lexer<`
-let a = 8
-
-if (a != b) {
-  a = 10
-}`>
-
-type _L2 = Lexer<`
-let a = "如果你要写年"
-`>
