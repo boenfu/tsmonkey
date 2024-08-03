@@ -20,8 +20,8 @@ export declare enum TokenType {
 
   LT = '<',
   GT = '>',
-  //   LE = '<=',
-  //   GE = '>=',
+  LE = '<=',
+  GE = '>=',
   //   AND = '&&',
   //   OR = '||',
 

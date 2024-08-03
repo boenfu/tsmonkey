@@ -36,6 +36,6 @@ export type GT<TA extends number, TB extends number> = EQ<Compare<TA, TB>, '>'>
 
 export type LT<TA extends number, TB extends number> = EQ<Compare<TA, TB>, '<'>
 
-export type GTE<TA extends number, TB extends number> = OR<GT<TA, TB>, EQ<TA, TB>>
+export type GE<TA extends number, TB extends number> = OR<GT<TA, TB>, EQ<TA, TB>>
 
-export type LTE<TA extends number, TB extends number> = OR<LT<TA, TB>, EQ<TA, TB>>
+export type LE<TA extends number, TB extends number> = OR<LT<TA, TB>, EQ<TA, TB>>

@@ -1,6 +1,4 @@
-import type { Eval } from './eval'
-import type { Lexer } from './lexer'
-import type { Expression, Parser, Program } from './parser'
+import type { Eval, Expression, Lexer, Parser, Program } from 'tsmonkey'
 
 type _L1 = Lexer<`
 let a = 8
@@ -134,4 +132,16 @@ function fibonacci(n) {
 }
 
 fibonacci(6)
+`>
+
+type LGE_7 = Eval<`
+if(5 >= 14) {
+  return 6 
+} else {
+  if(8 <= 9) {
+    return 7
+  } else {
+    return 0
+  }
+}
 `>

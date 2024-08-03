@@ -19,7 +19,7 @@ import type {
   Statement,
   StringLiteral,
 } from './parser'
-import type { Divide, EQ, GT, IsTruthy, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
+import type { Divide, EQ, GE, GT, IsTruthy, LE, LT, Minus, Multiply, NEQ, OR, Plus } from './utils'
 
 declare const ReturnTypeTag: symbol
 
@@ -106,6 +106,8 @@ type EvalInfixExpression<TInfixTokenType extends TokenType, TLeft, TRight, TCont
   [TokenType.NEQ]: NEQ<TLeft, TRight>
   [TokenType.LT]: LT<TLeft & number, TRight & number>
   [TokenType.GT]: GT<TLeft & number, TRight & number>
+  [TokenType.LE]: LE<TLeft & number, TRight & number>
+  [TokenType.GE]: GE<TLeft & number, TRight & number>
   [TokenType.LPAREN]: never
 } extends { [T in TInfixTokenType]: infer TR } ? [TR, TContext] : never
 

@@ -170,6 +170,8 @@ interface PriorityMap {
   [TokenType.NEQ]: Priority.EQUALS
   [TokenType.LT]: Priority.LESSGREATER
   [TokenType.GT]: Priority.LESSGREATER
+  [TokenType.LE]: Priority.LESSGREATER
+  [TokenType.GE]: Priority.LESSGREATER
   [TokenType.PLUS]: Priority.SUM
   [TokenType.MINUS]: Priority.SUM
   [TokenType.SLASH]: Priority.PRODUCT
@@ -324,34 +326,22 @@ type ParseCallArguments<TToken extends Token, TTokens extends Token[], TArgument
     ? ParseCallArguments<TNextToken, TRest2, [...TArguments, TArgument]>
     : []
 
+type DefaultInfixExpression<TToken extends keyof PriorityMap, TLeft extends Expression, TTokens extends Token[]> = ParseExpression2<PriorityMap[TToken], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
+  ? [InfixExpression<TToken, TLeft, TRight>, TRest]
+  : never
+
 type ParseInfixParseFn<TLeft extends Expression, TToken extends Token, TTokens extends Token[]> = {
-  [TokenType.PLUS]: ParseExpression2<PriorityMap[TokenType.PLUS], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.PLUS, TLeft, TRight>, TRest]
-    : never
-  [TokenType.MINUS]: ParseExpression2<PriorityMap[TokenType.MINUS], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.MINUS, TLeft, TRight>, TRest]
-    : never
-  [TokenType.SLASH]: ParseExpression2<PriorityMap[TokenType.SLASH], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.SLASH, TLeft, TRight>, TRest]
-    : never
-  [TokenType.ASTERISK]: ParseExpression2<PriorityMap[TokenType.ASTERISK], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.ASTERISK, TLeft, TRight>, TRest]
-    : never
-  [TokenType.EQ]: ParseExpression2<PriorityMap[TokenType.EQ], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.EQ, TLeft, TRight>, TRest]
-    : never
-  [TokenType.NEQ]: ParseExpression2<PriorityMap[TokenType.NEQ], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.NEQ, TLeft, TRight>, TRest]
-    : never
-  [TokenType.LT]: ParseExpression2<PriorityMap[TokenType.LT], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.LT, TLeft, TRight>, TRest]
-    : never
-  [TokenType.GT]: ParseExpression2<PriorityMap[TokenType.GT], TTokens> extends [infer TRight extends Expression, infer TRest extends Token[]]
-    ? [InfixExpression<TokenType.GT, TLeft, TRight>, TRest]
-    : never
-  [TokenType.LPAREN]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]]
-    ? ParseCallExpression<TLeft, TNextToken, TRest>
-    : never
+  [TokenType.PLUS]: DefaultInfixExpression<TokenType.PLUS, TLeft, TTokens>
+  [TokenType.MINUS]: DefaultInfixExpression<TokenType.MINUS, TLeft, TTokens>
+  [TokenType.SLASH]: DefaultInfixExpression<TokenType.SLASH, TLeft, TTokens>
+  [TokenType.ASTERISK]: DefaultInfixExpression<TokenType.ASTERISK, TLeft, TTokens>
+  [TokenType.EQ]: DefaultInfixExpression<TokenType.EQ, TLeft, TTokens>
+  [TokenType.NEQ]: DefaultInfixExpression<TokenType.NEQ, TLeft, TTokens>
+  [TokenType.LT]: DefaultInfixExpression<TokenType.LT, TLeft, TTokens>
+  [TokenType.GT]: DefaultInfixExpression<TokenType.GT, TLeft, TTokens>
+  [TokenType.LE]: DefaultInfixExpression<TokenType.LE, TLeft, TTokens>
+  [TokenType.GE]: DefaultInfixExpression<TokenType.GE, TLeft, TTokens>
+  [TokenType.LPAREN]: TTokens extends [infer TNextToken extends Token, ...infer TRest extends Token[]] ? ParseCallExpression<TLeft, TNextToken, TRest> : never
 } extends { [T in TToken['type']]: [infer TExpression extends Expression, infer TRest] } ? [TExpression, TRest] : []
 
 // @ts-expect-error ts(2589)
