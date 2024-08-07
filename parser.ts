@@ -184,7 +184,7 @@ ParsePrefixParseFn<TToken, TTokens> extends [infer TLeft extends Expression, [in
 
 type ParseInfixParseLoop<TPrecedence extends Precedence, TLeft extends Expression, TToken extends Token, TTokens extends Token[]> =
 LT<TPrecedence, GetPrecedence<TToken['type']>> extends true
-  ? ParseInfixParseFn< TLeft, TToken, TTokens> extends [infer TExpression extends Expression, [infer TNextToken extends Token, ...infer TRest extends Token[]]]
+  ? ParseInfixParseFn<TLeft, TToken, TTokens> extends [infer TExpression extends Expression, [infer TNextToken extends Token, ...infer TRest extends Token[]]]
     ? ParseInfixParseLoop<TPrecedence, TExpression, TNextToken, TRest>
     : [TLeft, [TToken, ...TTokens]]
   : [TLeft, [TToken, ...TTokens]]
@@ -198,7 +198,7 @@ type ParseIfExpression<TTokens extends Token[]> = TTokens extends [
   Token<TokenType.LPAREN>,
   ...infer TRest extends Token[],
 ]
-  ? ParseExpression2< Precedence.LOWEST, TRest> extends
+  ? ParseExpression2<Precedence.LOWEST, TRest> extends
   [infer TCondition extends Expression, [Token<TokenType.RPAREN>, Token<TokenType.LBRACE>, infer TNextToken extends Token, ...infer TRest extends Token[] ] ]
     ? ParseBlockStatement<TNextToken, TRest, []> extends
     [infer TConsequence extends BlockStatement<any>, infer TRest extends Token[] ]

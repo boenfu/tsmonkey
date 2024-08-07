@@ -48,7 +48,7 @@ type EvalNode<TNode extends Node, TContext extends Context = { vars: {}, parent:
       : TAlternative extends Node ? EvalNode<TAlternative, TContext> : [void, TContext]
     : never
   FunctionLiteral: TNode extends FunctionLiteral<infer TName, infer TParameters, infer TBody>
-    ? [TName, TContext & { vars: TContext['vars'] & { [P in TName['value']]: FunctionLiteral< TName, TParameters, TBody> } }] : never
+    ? [TName, TContext & { vars: TContext['vars'] & { [P in TName['value']]: FunctionLiteral<TName, TParameters, TBody> } }] : never
   CallExpression: TNode extends CallExpression<infer TFunction, infer TArguments>
     ? EvalNode<TFunction, TContext>[0] extends FunctionLiteral<any, infer TParameters, infer TBody>
       ? [EvalReturnValue<EvalNode<TBody, EvalFunctionContext<TParameters, TArguments, { vars: {}, parent: TContext }>>[0]>, TContext]

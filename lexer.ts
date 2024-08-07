@@ -1,5 +1,4 @@
 export declare enum TokenType {
-  ILLEGAL = 'ILLEGAL',
   EOF = 'EOF',
 
   // 标识符 + 字面量
